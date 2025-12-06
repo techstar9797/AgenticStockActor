@@ -3,6 +3,10 @@ apify_storage/
 storage/
 .actor/
 
+# Twilio Config (contains credentials)
+twilio_config.json
+test_input_whatsapp.json
+
 # Python
 __pycache__/
 *.py[cod]
