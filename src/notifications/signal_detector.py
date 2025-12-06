@@ -75,6 +75,22 @@ class SignalChangeDetector:
                     result['notification_sent'] = True
                     
                     Actor.log.info(f'🔔 SIGNAL CHANGE for {ticker}: {previous_signal} → {current_signal}')
+        else:
+            # First run - send initial notification
+            result['signal_changed'] = True
+            result['change_type'] = f"INITIAL → {current_signal}"
+            result['is_first_run'] = True
+            
+            # Send initial notification
+            await self._send_notification(
+                ticker, 'INITIAL', current_signal,
+                current_confidence, 0.0,
+                whatsapp_notifier, whatsapp_number,
+                price, sentiment, reasoning, trump_impact
+            )
+            result['notification_sent'] = True
+            
+            Actor.log.info(f'📱 INITIAL SIGNAL for {ticker}: {current_signal} (WhatsApp sent!)')
         
         # Save current signal for next run
         await self.kv_store.set_value(f'signal_{ticker}', {
@@ -104,10 +120,20 @@ class SignalChangeDetector:
         # Determine urgency
         urgent_changes = [('BUY', 'SELL'), ('SELL', 'BUY'), ('HOLD', 'SELL'), ('HOLD', 'BUY')]
         is_urgent = (previous_signal, current_signal) in urgent_changes
+        is_first_run = (previous_signal == 'INITIAL')
         
-        emoji_map = {'BUY': '🟢', 'SELL': '🔴', 'HOLD': '🟡', 'WATCH': '🔵'}
+        emoji_map = {'BUY': '🟢', 'SELL': '🔴', 'HOLD': '🟡', 'WATCH': '🔵', 'INITIAL': '🆕'}
         
-        notification_message = f"""
+        if is_first_run:
+            notification_message = f"""
+📊 INITIAL SIGNAL: {ticker}
+
+{emoji_map.get(current_signal, '⚪')} Signal: {current_signal} ({current_confidence:.0%} confidence)
+
+Time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+"""
+        else:
+            notification_message = f"""
 {'🚨 URGENT ' if is_urgent else '📊 '}SIGNAL CHANGE ALERT: {ticker}
 
 {emoji_map.get(previous_signal, '⚪')} Previous: {previous_signal} ({previous_confidence:.0%} confidence)
