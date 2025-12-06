@@ -15,7 +15,9 @@ import asyncio
 
 from src.scrapers.yahoo_finance import YahooFinanceScraper
 from src.scrapers.reddit import RedditScraper
+from src.scrapers.truth_social import TruthSocialScraper
 from src.analyzers.sentiment import SentimentAnalyzer
+from src.analyzers.trump_sentiment import TrumpSentimentAnalyzer
 from src.analyzers.trading_signal import TradingSignalGenerator
 from src.notifications import SignalChangeDetector
 
@@ -24,7 +26,9 @@ async def analyze_ticker(
     ticker: str,
     yahoo_scraper: YahooFinanceScraper,
     reddit_scraper: RedditScraper,
+    truth_social_scraper: TruthSocialScraper,
     sentiment_analyzer: SentimentAnalyzer,
+    trump_analyzer: TrumpSentimentAnalyzer,
     signal_generator: TradingSignalGenerator,
     signal_detector: SignalChangeDetector,
     config: dict
@@ -55,15 +59,43 @@ async def analyze_ticker(
         max_posts=config.get('max_reddit_posts', 50)
     )
     
+    # Step 2b: Scrape Truth Social (@realDonaldTrump)
+    Actor.log.info(f'Step 2b: Scraping Truth Social (@realDonaldTrump)...')
+    trump_posts = await truth_social_scraper.scrape_trump_posts(
+        ticker=ticker,
+        max_posts=config.get('max_trump_posts', 20)
+    )
+    
     # Step 3: Analyze Sentiment
     news_sentiment = sentiment_analyzer.analyze_news_sentiment(news_articles)
     reddit_sentiment = sentiment_analyzer.analyze_reddit_sentiment(reddit_posts)
+    
+    # Step 3b: Analyze Trump's posts for market impact
+    Actor.log.info(f'Step 3b: Analyzing Trump impact...')
+    trump_impact = trump_analyzer.analyze_trump_impact(trump_posts, ticker)
+    
+    # Calculate Trump sentiment weight based on impact level
+    trump_weight = trump_analyzer.get_trump_weight(
+        trump_impact['impact_level'],
+        trump_impact.get('ticker_mentioned', False)
+    )
     
     overall_sentiment = sentiment_analyzer.synthesize_sentiment(
         ticker,
         news_sentiment,
         reddit_sentiment
     )
+    
+    # Add Trump sentiment to overall (with dynamic weighting)
+    if trump_weight > 0:
+        overall_sentiment['trump_sentiment'] = trump_impact['sentiment_score']
+        overall_sentiment['trump_weight'] = trump_weight
+        # Adjust overall sentiment score with Trump factor
+        original_score = overall_sentiment['overall_sentiment']
+        overall_sentiment['overall_sentiment'] = (
+            original_score * 0.7 + trump_impact['sentiment_score'] * trump_weight * 0.3
+        )
+        Actor.log.info(f'  Trump-adjusted sentiment: {original_score:.2f} → {overall_sentiment["overall_sentiment"]:.2f}')
     
     # Step 4: Generate Trading Signal
     trading_signal = signal_generator.generate_signal(
@@ -113,6 +145,14 @@ async def analyze_ticker(
         # Data Counts
         'news_count': len(news_articles),
         'reddit_posts_count': len(reddit_posts),
+        'trump_posts_count': len(trump_posts),
+        
+        # Trump Impact
+        'trump_impact_level': trump_impact['impact_level'],
+        'trump_sentiment': trump_impact['sentiment_score'],
+        'trump_mentioned_ticker': trump_impact.get('ticker_mentioned', False),
+        'trump_themes': trump_impact.get('key_themes', []),
+        'trump_policy_implications': trump_impact.get('policy_implications', []),
         
         # Signal Change Info
         'signal_changed': change_info['signal_changed'],
@@ -146,6 +186,19 @@ async def analyze_ticker(
     Actor.log.info(f'   News: {result["news_sentiment"]:+.2f}')
     Actor.log.info(f'   Reddit: {result["reddit_sentiment"]:+.2f}')
     Actor.log.info(f'   Community: {result["community_mood"].upper()}')
+    
+    # Show Trump impact if significant
+    if result.get('trump_impact_level') and result['trump_impact_level'] != 'none':
+        trump_emoji = '🚨' if result.get('trump_mentioned_ticker') else '📱'
+        Actor.log.info(f'\n{trump_emoji} TRUMP IMPACT:')
+        Actor.log.info(f'   Level: {result["trump_impact_level"].upper()}')
+        Actor.log.info(f'   Sentiment: {result.get("trump_sentiment", 0):+.2f}')
+        if result.get('trump_mentioned_ticker'):
+            Actor.log.info(f'   ⚠️  TICKER DIRECTLY MENTIONED!')
+        if result.get('trump_themes'):
+            Actor.log.info(f'   Themes: {", ".join(result["trump_themes"][:3])}')
+        if result.get('trump_policy_implications'):
+            Actor.log.info(f'   Policy: {", ".join(result["trump_policy_implications"][:2])}')
     Actor.log.info(f'\n📝 REASONING:')
     Actor.log.info(f'   {result["reasoning"]}')
     if result['key_catalysts']:
@@ -208,7 +261,9 @@ async def main():
         # Initialize components
         yahoo_scraper = YahooFinanceScraper()
         reddit_scraper = RedditScraper()
+        truth_social_scraper = TruthSocialScraper()
         sentiment_analyzer = SentimentAnalyzer(openai_api_key)
+        trump_analyzer = TrumpSentimentAnalyzer(openai_api_key)
         signal_generator = TradingSignalGenerator(openai_api_key)
         signal_detector = SignalChangeDetector()
         await signal_detector.initialize()
@@ -223,7 +278,9 @@ async def main():
                     ticker,
                     yahoo_scraper,
                     reddit_scraper,
+                    truth_social_scraper,
                     sentiment_analyzer,
+                    trump_analyzer,
                     signal_generator,
                     signal_detector,
                     config
@@ -244,6 +301,7 @@ async def main():
         # Cleanup
         await yahoo_scraper.close()
         await reddit_scraper.close()
+        await truth_social_scraper.close()
         
         # Final summary
         Actor.log.info('\n' + '='*60)

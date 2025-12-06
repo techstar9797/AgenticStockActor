@@ -154,19 +154,41 @@ Respond in JSON format:
         self,
         ticker: str,
         news_analysis: Dict,
-        reddit_analysis: Dict
+        reddit_analysis: Dict,
+        trump_sentiment: float = None,
+        trump_weight: float = 0.0
     ) -> Dict:
-        """Combine news and Reddit sentiment into overall sentiment"""
+        """Combine news, Reddit, and Trump sentiment into overall sentiment
         
-        # Weighted average: news 60%, Reddit 40%
+        Args:
+            ticker: Stock ticker
+            news_analysis: News sentiment results
+            reddit_analysis: Reddit sentiment results
+            trump_sentiment: Trump's sentiment score (-1 to 1)
+            trump_weight: Weight multiplier for Trump sentiment (0 to 2.0)
+        """
+        
+        # Base weighted average: news 60%, Reddit 40%
         # News from established sources is more reliable than social media
         news_weight = 0.6
         reddit_weight = 0.4
         
-        overall_sentiment = (
+        base_sentiment = (
             news_analysis['sentiment_score'] * news_weight +
             reddit_analysis['sentiment_score'] * reddit_weight
         )
+        
+        # If Trump sentiment is available, adjust overall sentiment
+        if trump_sentiment is not None and trump_weight > 0:
+            # Trump sentiment gets dynamic weight based on impact level
+            # Formula: (Base × 70%) + (Trump × Weight × 30%)
+            overall_sentiment = (
+                base_sentiment * 0.7 +
+                trump_sentiment * trump_weight * 0.3
+            )
+            Actor.log.info(f'  Sentiment adjusted for Trump impact: {base_sentiment:.2f} → {overall_sentiment:.2f}')
+        else:
+            overall_sentiment = base_sentiment
         
         # Determine sentiment label
         if overall_sentiment >= 0.6:
