@@ -1,0 +1,13 @@
+{
+  "tickers": ["AAPL", "TSLA", "NVDA"],
+  "openaiApiKey": "YOUR_OPENAI_API_KEY_HERE",
+  "maxNewsPerTicker": 20,
+  "maxRedditPostsPerTicker": 50,
+  "subreddits": [
+    "wallstreetbets",
+    "stocks",
+    "investing",
+    "StockMarket"
+  ],
+  "enableNotifications": false
+}

@@ -1,0 +1,33 @@
+# Apify
+apify_storage/
+storage/
+.actor/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.log
+
+# Testing
+.pytest_cache/
+htmlcov/
+
