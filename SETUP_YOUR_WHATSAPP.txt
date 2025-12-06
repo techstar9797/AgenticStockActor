@@ -1,0 +1,83 @@
+================================================================================
+📱 QUICK WHATSAPP SETUP - FOR SACHIN KESWANI
+================================================================================
+
+Your Info:
+- WhatsApp Number: +1-858-699-8271
+- Twilio Account SID: AC38ed... (see Twilio console)
+
+3 QUICK STEPS:
+================================================================================
+
+STEP 1: Join WhatsApp Sandbox (2 minutes)
+------------------------------------------
+1. Open WhatsApp on your phone (858-699-8271)
+2. Start chat with: +1-415-523-8886
+3. Send: "join <your-code>"
+   (Get code from: https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn)
+4. Wait for welcome message ✅
+
+
+STEP 2: Get Auth Token (1 minute)
+----------------------------------
+1. Go to: https://console.twilio.com
+2. See "Account Info" on dashboard
+3. Click "Show" next to Auth Token
+4. Copy the token (long string)
+
+
+STEP 3: Update Apify Schedule (2 minutes)
+------------------------------------------
+1. Go to: https://console.apify.com/schedules/7A6c15ixwldghb0bh
+2. Click "Settings" tab → "Input"
+3. Add these 3 fields to the JSON:
+
+   "whatsappNumber": "+18586998271",
+   "twilioAccountSid": "YOUR_TWILIO_SID",
+   "twilioAuthToken": "<PASTE YOUR AUTH TOKEN HERE>",
+   "enableNotifications": true
+
+4. Click "Save"
+5. Done! ✅
+
+
+WHAT HAPPENS NEXT:
+================================================================================
+- Next hour (:00) - Actor runs (baseline)
+- Hour after - Actor runs again
+- If signal changed → 📱 WhatsApp sent to +1-858-699-8271!
+
+
+EXAMPLE WHATSAPP MESSAGE:
+================================================================================
+🚨 URGENT SIGNAL CHANGE: TSLA
+
+🟡 Previous: HOLD
+🟢 *NEW: BUY*
+
+💰 $378.50
+💭 +0.72
+🎯 90%
+
+Strong positive sentiment...
+
+📱 TRUMP IMPACT: HIGH
+🚨 TSLA DIRECTLY MENTIONED!
+
+🕐 13:00 UTC
+
+
+SUPPORT LINKS:
+================================================================================
+- Get Auth Token: https://console.twilio.com
+- WhatsApp Sandbox: https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn
+- Update Schedule: https://console.apify.com/schedules/7A6c15ixwldghb0bh
+- View Runs: https://console.apify.com/actors/43ZTkpbPq0YKf3djc/runs
+
+
+THAT'S IT! 🎉
+================================================================================
+Add your Auth Token and you'll get WhatsApp alerts when signals change!
+
+Built for Apify 1M Challenge Hackathon
+By: Sachin Keswani (sachin.news@gmail.com)
