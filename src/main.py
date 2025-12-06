@@ -19,7 +19,7 @@ from src.scrapers.truth_social import TruthSocialScraper
 from src.analyzers.sentiment import SentimentAnalyzer
 from src.analyzers.trump_sentiment import TrumpSentimentAnalyzer
 from src.analyzers.trading_signal import TradingSignalGenerator
-from src.notifications import SignalChangeDetector
+from src.notifications import SignalChangeDetector, WhatsAppNotifier
 
 
 async def analyze_ticker(
@@ -105,10 +105,20 @@ async def analyze_ticker(
     )
     
     # Step 5: Check for signal changes and send notifications
+    # Get WhatsApp notifier from config
+    whatsapp_notifier = config.get('whatsapp_notifier')
+    whatsapp_number = config.get('whatsapp_number')
+    
     change_info = await signal_detector.check_and_notify(
         ticker,
         trading_signal['signal'],
-        trading_signal['confidence']
+        trading_signal['confidence'],
+        whatsapp_notifier=whatsapp_notifier,
+        whatsapp_number=whatsapp_number,
+        price=price_data.get('last_price', 0),
+        sentiment=overall_sentiment['overall_sentiment'],
+        reasoning=trading_signal.get('reasoning', ''),
+        trump_impact=trump_impact if trump_weight > 0 else None
     )
     
     # Compile complete analysis result
@@ -234,17 +244,34 @@ async def main():
             Actor.log.error('❌ OpenAI API key is required')
             return
         
+        # WhatsApp configuration
+        whatsapp_enabled = actor_input.get('enableNotifications', True)
+        whatsapp_number = actor_input.get('whatsappNumber')
+        twilio_sid = actor_input.get('twilioAccountSid')
+        twilio_token = actor_input.get('twilioAuthToken')
+        
+        # Initialize WhatsApp notifier if credentials provided
+        whatsapp_notifier = None
+        if whatsapp_enabled and twilio_sid and twilio_token:
+            whatsapp_notifier = WhatsAppNotifier(twilio_sid, twilio_token)
+            Actor.log.info(f'📱 WhatsApp notifications enabled for {whatsapp_number}')
+        elif whatsapp_enabled and whatsapp_number:
+            Actor.log.warning('⚠️  WhatsApp number provided but missing Twilio credentials')
+            Actor.log.info('💡 Get free Twilio account: https://www.twilio.com/try-twilio')
+        
         # Configuration
         config = {
             'max_news': actor_input.get('maxNewsPerTicker', 20),
             'max_reddit_posts': actor_input.get('maxRedditPostsPerTicker', 50),
+            'max_trump_posts': actor_input.get('maxTrumpPosts', 20),
             'subreddits': actor_input.get('subreddits', [
                 'wallstreetbets',
                 'stocks',
                 'investing',
                 'StockMarket'
             ]),
-            'enable_notifications': actor_input.get('enableNotifications', False)
+            'whatsapp_notifier': whatsapp_notifier,
+            'whatsapp_number': whatsapp_number
         }
         
         # Log startup
@@ -302,6 +329,8 @@ async def main():
         await yahoo_scraper.close()
         await reddit_scraper.close()
         await truth_social_scraper.close()
+        if whatsapp_notifier:
+            await whatsapp_notifier.close()
         
         # Final summary
         Actor.log.info('\n' + '='*60)

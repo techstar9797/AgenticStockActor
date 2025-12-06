@@ -15,7 +15,18 @@ class SignalChangeDetector:
         """Initialize key-value store for signal history"""
         self.kv_store = await Actor.open_key_value_store()
     
-    async def check_and_notify(self, ticker: str, current_signal: str, current_confidence: float) -> Dict:
+    async def check_and_notify(
+        self, 
+        ticker: str, 
+        current_signal: str, 
+        current_confidence: float,
+        whatsapp_notifier=None,
+        whatsapp_number: str = None,
+        price: float = 0,
+        sentiment: float = 0,
+        reasoning: str = "",
+        trump_impact: Dict = None
+    ) -> Dict:
         """Check if signal changed and return notification data"""
         
         # Get previous signal from storage
@@ -55,8 +66,12 @@ class SignalChangeDetector:
                 
                 if (previous_signal, current_signal) in significant_changes:
                     # Send notification
-                    await self._send_notification(ticker, previous_signal, current_signal, 
-                                                 current_confidence, previous_confidence)
+                    await self._send_notification(
+                        ticker, previous_signal, current_signal,
+                        current_confidence, previous_confidence,
+                        whatsapp_notifier, whatsapp_number,
+                        price, sentiment, reasoning, trump_impact
+                    )
                     result['notification_sent'] = True
                     
                     Actor.log.info(f'🔔 SIGNAL CHANGE for {ticker}: {previous_signal} → {current_signal}')
@@ -76,7 +91,13 @@ class SignalChangeDetector:
         previous_signal: str,
         current_signal: str,
         current_confidence: float,
-        previous_confidence: float
+        previous_confidence: float,
+        whatsapp_notifier=None,
+        whatsapp_number: str = None,
+        price: float = 0,
+        sentiment: float = 0,
+        reasoning: str = "",
+        trump_impact: Dict = None
     ):
         """Send notification via multiple channels"""
         
@@ -112,10 +133,23 @@ Time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
             'message': notification_message
         })
         
-        # TODO: Add email/Slack/SMS integration here
-        # Example:
-        # await self._send_email(notification_message)
-        # await self._send_slack(notification_message)
+        # Send WhatsApp notification if enabled
+        if whatsapp_notifier and whatsapp_number:
+            try:
+                await whatsapp_notifier.send_signal_change_alert(
+                    to_number=whatsapp_number,
+                    ticker=ticker,
+                    previous_signal=previous_signal,
+                    current_signal=current_signal,
+                    confidence=current_confidence,
+                    price=price,
+                    sentiment=sentiment,
+                    reasoning=reasoning,
+                    trump_impact=trump_impact
+                )
+                Actor.log.info(f'📱 WhatsApp notification sent for {ticker}')
+            except Exception as e:
+                Actor.log.error(f'WhatsApp notification failed: {str(e)}')
     
     async def get_all_signals(self) -> Dict[str, Dict]:
         """Get all stored signals for all tickers"""
