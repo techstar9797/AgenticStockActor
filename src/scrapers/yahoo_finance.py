@@ -53,9 +53,72 @@ class YahooFinanceScraper:
         }
     
     async def _get_price_from_api(self, ticker: str) -> Optional[Dict]:
-        """Get price data from Yahoo Finance query API"""
+        """Get price data from Yahoo Finance chart API (most reliable)"""
         try:
-            # Yahoo Finance v10 API
+            # Use Yahoo Finance chart API - more reliable
+            url = f'https://query1.finance.yahoo.com/v8/finance/chart/{ticker}'
+            params = {
+                'interval': '1d',
+                'range': '5d'
+            }
+            
+            response = await self.client.get(url, params=params)
+            response.raise_for_status()
+            data_json = response.json()
+            
+            chart = data_json.get('chart', {})
+            result = chart.get('result', [])
+            
+            if not result or not result[0]:
+                Actor.log.warning(f'No chart data for {ticker}')
+                return None
+            
+            quote = result[0]
+            meta = quote.get('meta', {})
+            
+            # Get current price info from meta
+            current_price = meta.get('regularMarketPrice', 0)
+            previous_close = meta.get('previousClose', meta.get('chartPreviousClose', 0))
+            
+            if current_price == 0:
+                Actor.log.warning(f'Zero price returned for {ticker}')
+                return None
+            
+            # Calculate change
+            price_change = current_price - previous_close if previous_close > 0 else 0
+            percent_change = (price_change / previous_close) if previous_close > 0 else 0
+            
+            data = {
+                'ticker': ticker.upper(),
+                'company_name': meta.get('longName', meta.get('shortName', ticker)),
+                'last_price': float(current_price),
+                'price_change': float(price_change),
+                'percent_change': float(percent_change),
+                'previous_close': float(previous_close),
+                'open_price': float(meta.get('regularMarketOpen', 0)),
+                'day_range_low': float(meta.get('regularMarketDayLow', 0)),
+                'day_range_high': float(meta.get('regularMarketDayHigh', 0)),
+                'volume': int(meta.get('regularMarketVolume', 0)),
+                'range_52w_low': float(meta.get('fiftyTwoWeekLow', 0)),
+                'range_52w_high': float(meta.get('fiftyTwoWeekHigh', 0)),
+                'avg_volume': int(meta.get('averageDailyVolume', 0)),
+                'market_cap': meta.get('marketCap', 'N/A')
+            }
+            
+            if data['last_price'] > 0:
+                Actor.log.info(f'✓ Price data (Chart API): ${data["last_price"]:.2f} ({data["percent_change"]:+.2%})')
+                return data
+            
+            return None
+            
+        except Exception as e:
+            Actor.log.debug(f'Chart API failed: {str(e)}')
+            # Try quoteSummary API as fallback
+            return await self._get_price_from_quote_summary(ticker)
+    
+    async def _get_price_from_quote_summary(self, ticker: str) -> Optional[Dict]:
+        """Fallback: Get price from quoteSummary API"""
+        try:
             url = f'https://query2.finance.yahoo.com/v10/finance/quoteSummary/{ticker}'
             params = {
                 'modules': 'price,summaryDetail'
@@ -91,13 +154,13 @@ class YahooFinanceScraper:
             }
             
             if data['last_price'] > 0:
-                Actor.log.info(f'✓ Price data (API): ${data["last_price"]:.2f} ({data["percent_change"]:+.2%})')
+                Actor.log.info(f'✓ Price data (QuoteSummary): ${data["last_price"]:.2f} ({data["percent_change"]:+.2%})')
                 return data
             
             return None
             
         except Exception as e:
-            Actor.log.debug(f'API fetch failed: {str(e)}')
+            Actor.log.debug(f'QuoteSummary API failed: {str(e)}')
             return None
     
     def _extract_price_data(self, soup: BeautifulSoup, ticker: str) -> Dict:
