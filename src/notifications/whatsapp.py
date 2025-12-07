@@ -129,7 +129,7 @@ class WhatsAppNotifier:
         # Add timestamp
         message += f"""
 
-🕐 {datetime.utcnow().strftime('%H:%M UTC')}"""
+{datetime.utcnow().strftime('%H:%M EST')}"""
         
         return message
     
