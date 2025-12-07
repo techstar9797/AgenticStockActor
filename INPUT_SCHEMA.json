@@ -6,10 +6,10 @@
     "tickers": {
       "title": "Stock Tickers",
       "type": "array",
-      "description": "List of stock ticker symbols to analyze (e.g., AAPL, TSLA, NVDA)",
+      "description": "List of stock ticker symbols to analyze - Default: Top 10 S&P 500 by market cap",
       "editor": "stringList",
-      "example": ["AAPL", "TSLA", "NVDA"],
-      "prefill": ["AAPL", "TSLA"],
+      "example": ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "BRK.B", "TSLA", "LLY", "AVGO"],
+      "prefill": ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "BRK.B", "TSLA", "LLY", "AVGO"],
       "items": {
         "type": "string"
       }
