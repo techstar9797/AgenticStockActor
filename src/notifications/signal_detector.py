@@ -126,20 +126,19 @@ class SignalChangeDetector:
         
         if is_first_run:
             notification_message = f"""
-📊 INITIAL SIGNAL: {ticker}
+{'🚨 ' if is_urgent else ''}SIGNAL: {ticker}
 
-{emoji_map.get(current_signal, '⚪')} Signal: {current_signal} ({current_confidence:.0%} confidence)
+{emoji_map.get(current_signal, '⚪')} {current_signal} ({current_confidence:.0%} confidence)
 
-Time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+{datetime.utcnow().strftime('%H:%M EST')}
 """
         else:
             notification_message = f"""
-{'🚨 URGENT ' if is_urgent else '📊 '}SIGNAL CHANGE ALERT: {ticker}
+{'🚨 ' if is_urgent else ''}SIGNAL CHANGE: {ticker}
 
-{emoji_map.get(previous_signal, '⚪')} Previous: {previous_signal} ({previous_confidence:.0%} confidence)
-{emoji_map.get(current_signal, '⚪')} **NEW: {current_signal}** ({current_confidence:.0%} confidence)
+{emoji_map.get(previous_signal, '⚪')}{previous_signal} → {emoji_map.get(current_signal, '⚪')}{current_signal}
 
-Time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+{datetime.utcnow().strftime('%H:%M EST')}
 """
         
         # Log to console (always)

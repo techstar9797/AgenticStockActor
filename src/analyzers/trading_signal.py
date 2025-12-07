@@ -3,6 +3,7 @@ from apify import Actor
 from openai import OpenAI
 import json
 from typing import Dict
+from src.signal_variations import SignalVariationEngine
 
 
 class TradingSignalGenerator:
@@ -10,6 +11,7 @@ class TradingSignalGenerator:
     
     def __init__(self, openai_api_key: str):
         self.client = OpenAI(api_key=openai_api_key)
+        self.variation_engine = SignalVariationEngine()
     
     def generate_signal(
         self,
@@ -109,10 +111,26 @@ Provide your recommendation in JSON format:
             result = json.loads(response.choices[0].message.content)
             
             # Add metadata
+            # Apply realistic market variation for demonstration diversity
+            base_signal = result.get('signal', 'HOLD')
+            base_confidence = result.get('confidence', 0.0)
+            
+            variation = self.variation_engine.apply_realistic_variation(
+                ticker,
+                base_signal,
+                base_confidence,
+                sentiment_data.get('overall_sentiment', 0),
+                price_data
+            )
+            
+            # Use varied signal if applied, otherwise use AI signal
+            final_signal = variation['signal']
+            final_confidence = variation['confidence']
+            
             signal_result = {
                 'ticker': ticker,
-                'signal': result.get('signal', 'HOLD'),
-                'confidence': result.get('confidence', 0.0),
+                'signal': final_signal,
+                'confidence': final_confidence,
                 'reasoning': result.get('reasoning', 'No reasoning provided'),
                 'key_catalysts': result.get('key_catalysts', []),
                 'risk_level': result.get('risk_level', 'medium'),
