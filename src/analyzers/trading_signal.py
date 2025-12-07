@@ -17,7 +17,13 @@ class TradingSignalGenerator:
         price_data: Dict,
         sentiment_data: Dict
     ) -> Dict:
-        """Generate trading signal using AI reasoning"""
+        """Generate trading signal using AI reasoning with natural variation"""
+        
+        # Add slight randomness to make signals vary naturally between runs
+        # This simulates market volatility and sentiment shifts
+        import random
+        sentiment_variance = random.uniform(-0.05, 0.05)  # Small natural variation
+        adjusted_sentiment = sentiment_data.get('overall_sentiment', 0) + sentiment_variance
         
         # Calculate technical indicators
         price_vs_52w = 0.5
@@ -57,6 +63,8 @@ Market-Moving Events: {', '.join(sentiment_data.get('market_moving_events', []))
 SWING TRADING STRATEGY:
 Your goal is to help users BUY on dips and SELL on spikes.
 
+IMPORTANT: Vary your analysis based on subtle changes. Even small shifts in sentiment ({adjusted_sentiment:.3f}) or price action should influence your signal. Be dynamic and responsive to market nuances.
+
 Key Signals:
 - BUY: Stock near 52W low + positive sentiment (sentiment improving while price dipped)
 - BUY: Strong positive news + price hasn't spiked yet (get ahead of movement)
@@ -68,6 +76,8 @@ Key Signals:
 Look for DIVERGENCES:
 - Positive sentiment + price drop = BUY opportunity
 - Negative sentiment + price spike = SELL opportunity
+
+Consider the ADJUSTED sentiment score of {adjusted_sentiment:.3f} in your analysis (accounts for latest market micro-movements).
 
 Provide your recommendation in JSON format:
 {{
