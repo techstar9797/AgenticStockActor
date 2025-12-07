@@ -1,0 +1,89 @@
+{
+  "title": "Agentic Stock Actor Input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "tickers": {
+      "title": "Stock Tickers",
+      "type": "array",
+      "description": "List of stock ticker symbols to analyze (e.g., AAPL, TSLA, NVDA)",
+      "editor": "stringList",
+      "example": ["AAPL", "TSLA", "NVDA"],
+      "prefill": ["AAPL", "TSLA"],
+      "items": {
+        "type": "string"
+      }
+    },
+    "openaiApiKey": {
+      "title": "OpenAI API Key",
+      "type": "string",
+      "description": "Your OpenAI API key for GPT-4 sentiment analysis and trading signals",
+      "editor": "textfield",
+      "isSecret": true
+    },
+    "maxNewsPerTicker": {
+      "title": "Max News Articles Per Ticker",
+      "type": "integer",
+      "description": "Maximum number of news articles to analyze per ticker",
+      "default": 20,
+      "minimum": 5,
+      "maximum": 50
+    },
+    "maxRedditPostsPerTicker": {
+      "title": "Max Reddit Posts Per Ticker",
+      "type": "integer",
+      "description": "Maximum Reddit posts to collect per ticker",
+      "default": 50,
+      "minimum": 10,
+      "maximum": 200
+    },
+    "subreddits": {
+      "title": "Subreddits to Scrape",
+      "type": "array",
+      "description": "Which subreddits to scrape for sentiment",
+      "editor": "stringList",
+      "default": ["wallstreetbets", "stocks", "investing", "StockMarket"],
+      "prefill": ["wallstreetbets", "stocks", "investing", "StockMarket"],
+      "items": {
+        "type": "string"
+      }
+    },
+    "maxTrumpPosts": {
+      "title": "Max Trump Posts",
+      "type": "integer",
+      "description": "Maximum number of @realDonaldTrump posts to analyze from Truth Social",
+      "default": 20,
+      "minimum": 5,
+      "maximum": 50
+    },
+    "whatsappNumber": {
+      "title": "WhatsApp Number",
+      "type": "string",
+      "description": "Your WhatsApp number to receive notifications (format: +1234567890)",
+      "editor": "textfield",
+      "example": "+15551234567"
+    },
+    "twilioAccountSid": {
+      "title": "Twilio Account SID (Optional)",
+      "type": "string",
+      "description": "Twilio Account SID for WhatsApp notifications",
+      "editor": "textfield",
+      "isSecret": true
+    },
+    "twilioAuthToken": {
+      "title": "Twilio Auth Token (Optional)",
+      "type": "string",
+      "description": "Twilio Auth Token for WhatsApp notifications",
+      "editor": "textfield",
+      "isSecret": true
+    },
+    "enableNotifications": {
+      "title": "Enable WhatsApp Notifications",
+      "type": "boolean",
+      "description": "Send WhatsApp alerts when signals change",
+      "default": true
+    }
+  },
+  "required": ["tickers", "openaiApiKey"]
+}
+
